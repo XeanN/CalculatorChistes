@@ -1,36 +1,215 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎭 JokeCalc
 
-## Getting Started
+> La calculadora que te hace reír — cada operación viene con un chiste random.
 
-First, run the development server:
+![JokeCalc Preview](https://calculator-chistes-jkim.vercel.app/og.png)
+
+## 🌐 Demo en vivo
+
+**[calculator-chistes-jkim.vercel.app](https://calculator-chistes-jkim.vercel.app)**
+
+---
+
+## ✨ ¿Qué hace?
+
+JokeCalc es una calculadora web que, cada vez que presionas `=`, además del resultado matemático te muestra un chiste random de la base de datos. Puedes reaccionar con 👍 o 👎 a cada chiste.
+
+---
+
+## 🛠️ Stack tecnológico
+
+| Capa | Tecnología |
+|------|-----------|
+| Framework | Next.js 16 (App Router) |
+| Lenguaje | TypeScript |
+| Estilos | Tailwind CSS v4 |
+| Base de datos | PostgreSQL via Supabase |
+| Deploy | Vercel |
+| Repositorio | GitHub |
+
+---
+
+## 🗂️ Estructura del proyecto
+
+```
+CalculatorChistes/
+├── app/
+│   ├── page.tsx              ← página principal
+│   ├── layout.tsx
+│   ├── globals.css
+│   └── api/
+│       ├── joke/route.ts     ← POST: evalúa operación y devuelve chiste random
+│       ├── jokes/route.ts    ← GET: historial de chistes
+│       └── reaction/route.ts ← POST: registra 👍/👎
+├── components/
+│   ├── Calculator.tsx        ← layout principal y estado
+│   ├── Display.tsx           ← pantalla con resultado
+│   ├── Key.tsx               ← botón reutilizable
+│   └── JokeCard.tsx          ← card animada del chiste
+├── lib/
+│   ├── supabase.ts           ← cliente Supabase
+│   └── evaluator.ts          ← evalúa expresiones matemáticas
+└── types/
+    └── index.ts              ← tipos: Joke, Reaction, CalcOperation
+```
+
+---
+
+## 🗄️ Base de datos — Supabase
+
+**Proyecto:** `CalculatorChistes`  
+**URL:** `https://omedmhllfqjyrbjkogbg.supabase.co`  
+**Region:** South America
+
+### Schema
+
+```sql
+-- Categorías de chistes
+create table joke_categories (
+  id serial primary key,
+  name text not null  -- "matemáticas", "programación", "general"
+);
+
+-- Chistes
+create table jokes (
+  id uuid default gen_random_uuid() primary key,
+  text text not null,
+  category_id int references joke_categories(id),
+  created_at timestamptz default now()
+);
+
+-- Reacciones (tracking de popularidad)
+create table reactions (
+  id uuid default gen_random_uuid() primary key,
+  joke_id uuid references jokes(id),
+  reaction text check (reaction in ('up', 'down')),
+  created_at timestamptz default now()
+);
+```
+
+---
+
+## 🚀 Deploy — Vercel
+
+**URL de producción:** `calculator-chistes-jkim.vercel.app`  
+**Branch de producción:** `main`  
+**CI/CD:** Automático — cada `git push` a `main` genera un nuevo deploy
+
+### Variables de entorno en Vercel
+
+| Variable | Descripción |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Publishable key de Supabase |
+
+---
+
+## ⚙️ Correr localmente
+
+### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/XeanN/CalculatorChistes.git
+cd CalculatorChistes
+```
+
+### 2. Instalar dependencias
+
+```bash
+npm install
+```
+
+### 3. Configurar variables de entorno
+
+Crea un archivo `.env.local` en la raíz:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://omedmhllfqjyrbjkogbg.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_publishable_key_aqui
+```
+
+### 4. Correr el servidor de desarrollo
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📡 API Endpoints
 
-## Learn More
+### `POST /api/joke`
+Evalúa una expresión matemática y devuelve un chiste random.
 
-To learn more about Next.js, take a look at the following resources:
+**Body:**
+```json
+{ "expression": "5 * 5" }
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Response:**
+```json
+{
+  "result": 25,
+  "joke": {
+    "id": "uuid",
+    "text": "¿Por qué los matemáticos no pueden manejar?...",
+    "joke_categories": { "name": "matemáticas" }
+  }
+}
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### `GET /api/jokes`
+Devuelve el historial de chistes ordenado por fecha.
 
-## Deploy on Vercel
+### `POST /api/reaction`
+Registra una reacción a un chiste.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Body:**
+```json
+{ "joke_id": "uuid", "reaction": "up" }
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🔄 Flujo de la aplicación
+
+```
+Usuario escribe operación
+        ↓
+Presiona "="
+        ↓
+POST /api/joke
+        ↓
+Evalúa expresión → selecciona chiste random de Supabase
+        ↓
+Muestra resultado + chiste con animación
+        ↓
+Usuario reacciona 👍/👎 → POST /api/reaction → guarda en Supabase
+```
+
+---
+
+## 🎨 Paleta de colores
+
+| Uso | Color |
+|-----|-------|
+| Fondo principal | `#0D0D0D` |
+| Teclas numéricas | `#1C1C1E` |
+| Acento violeta | `#7C3AED` |
+| Acento cyan | `#06B6D4` |
+| Card de chiste | `#0D0D1A` |
+
+---
+
+## 👤 Autor
+
+**Angel (XeanN)**  
+GitHub: [@XeanN](https://github.com/XeanN)
+
+---
+
+## 📝 Licencia
+
+MIT — úsalo como quieras.
