@@ -15,11 +15,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Expresión inválida' }, { status: 400 })
   }
 
+  const { count } = await supabase
+  .from('jokes')
+  .select('*', { count: 'exact', head: true })
+
+  const randomOffset = Math.floor(Math.random() * (count || 1))
+
   const { data, error } = await supabase
     .from('jokes')
     .select('id, text, joke_categories(name)')
-    .order('random()')  // <- el random mágico
-    .limit(1)
+    .range(randomOffset, randomOffset)
     .single()
 
   if (error || !data) {
